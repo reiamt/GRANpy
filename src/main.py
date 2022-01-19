@@ -20,6 +20,8 @@ from preprocessing import preprocess_graph, sparse_to_tuple, gen_train_val_test_
 from train import train_test_model
 from outputs import save_adj
 
+from pearson_main import pearsonMatrix, pearson_get_scores
+
 # Settings
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -79,6 +81,29 @@ adj_orig.eliminate_zeros()
 
 adj_train, crossval_edges, test_edges, test_edges_false = gen_train_val_test_sets(adj_orig, FLAGS.crossvalidation, FLAGS.balanced_metrics, FLAGS.ratio_val, FLAGS.ratio_test)
 adj = adj_train
+
+##### pearson matrix extension #################
+#genes = np.append(crossval_edges[2], crossval_edges[3])
+#genes = np.unique(genes)
+#val_features = features.toarray()
+#val_features = np.take(val_features, genes, axis=0)
+#pearson = pearsonMatrix(np.transpose(val_features))
+
+val_features = features.toarray()
+pearson = pearsonMatrix(np.transpose(val_features))
+
+pearson_val_edges = np.array(crossval_edges[2])
+pearson_val_edges = np.reshape(pearson_val_edges, (355,2))
+
+pearson_val_edges_false = np.array(crossval_edges[3])
+pearson_val_edges_false = np.reshape(pearson_val_edges_false, (355,2))
+
+pear_roc_score, pear_ap_score, pear_rp_auc = pearson_get_scores(pearson, adj_orig, pearson_val_edges, pearson_val_edges_false)
+
+print('pearson roc score is: ' + str(pear_roc_score))
+print('pearson ap score is: ' + str(pear_ap_score))
+print('pearson rp score is: ' + str(pear_rp_auc))
+################################################
 
 if FLAGS.features == 0:
     features = sp.identity(features.shape[0])  # featureless

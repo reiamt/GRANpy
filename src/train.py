@@ -63,11 +63,10 @@ def train_model(adj_orig, FLAGS, edges, placeholders, opt, model, feed_dict, mod
     _, _, train_loss, train_acc, train_ap, train_roc, _, opt_thresh = get_scores(adj_pred, adj_orig, train_edges, train_edges_false, model_timestamp)
     _, _, val_loss, val_acc, val_ap, val_roc, _, _ = get_scores(adj_pred, adj_orig, val_edges, val_edges_false, model_timestamp, thresh=opt_thresh)
     train_kl = None
-
     scores = [train_loss, train_kl, train_acc, train_ap, train_roc, val_loss, val_acc, val_ap, val_roc]    
     for x, l in zip(scores, hist_scores):
         l.append(x)
-
+    
     for epoch in range(FLAGS.epochs):
 
         t = time.time()
