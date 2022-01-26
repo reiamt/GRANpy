@@ -12,6 +12,7 @@ import tensorflow as tf
 from tensorboard.plugins.hparams import api as hp
 import numpy as np
 import scipy.sparse as sp
+import pandas as pd
 
 from optimizer import OptimizerAE, OptimizerVAE
 from input_data import load_data
@@ -20,7 +21,7 @@ from preprocessing import preprocess_graph, sparse_to_tuple, gen_train_val_test_
 from train import train_test_model
 from outputs import save_adj
 
-from pearson_main import pearsonMatrix, pearson_get_scores
+from pearson_main import pearsonMatrix, pearson_get_scores, randomMatrix
 
 # Settings
 flags = tf.app.flags
@@ -83,14 +84,11 @@ adj_train, crossval_edges, test_edges, test_edges_false = gen_train_val_test_set
 adj = adj_train
 
 ##### pearson matrix extension #################
-#genes = np.append(crossval_edges[2], crossval_edges[3])
-#genes = np.unique(genes)
-#val_features = features.toarray()
-#val_features = np.take(val_features, genes, axis=0)
-#pearson = pearsonMatrix(np.transpose(val_features))
-
 val_features = features.toarray()
 pearson = pearsonMatrix(np.transpose(val_features))
+
+random_matrix = randomMatrix(len(gene_names), len(gene_names))
+print('length of gene names: ' + str(len(gene_names)))
 
 pearson_val_edges = np.array(crossval_edges[2])
 pearson_val_edges = np.reshape(pearson_val_edges, (355,2))
@@ -98,12 +96,30 @@ pearson_val_edges = np.reshape(pearson_val_edges, (355,2))
 pearson_val_edges_false = np.array(crossval_edges[3])
 pearson_val_edges_false = np.reshape(pearson_val_edges_false, (355,2))
 
-pear_roc_score, pear_ap_score, pear_rp_auc = pearson_get_scores(pearson, adj_orig, pearson_val_edges, pearson_val_edges_false)
+pear_roc_score, pear_ap_score, pear_rp_auc, pear_f1_score = pearson_get_scores(pearson, adj_orig, pearson_val_edges, pearson_val_edges_false)
+random_roc_score, random_ap_score, random_rp_auc, random_f1_score = pearson_get_scores(random_matrix, adj_orig, pearson_val_edges, pearson_val_edges_false)
 
 print('pearson roc score is: ' + str(pear_roc_score))
 print('pearson ap score is: ' + str(pear_ap_score))
 print('pearson rp score is: ' + str(pear_rp_auc))
-################################################
+#print('pearson f1 score is: ' + str(pear_f1_score))
+
+print('random roc score is: ' + str(random_roc_score))
+print('random ap score is: ' + str(random_ap_score))
+print('random rp score is: ' + str(random_rp_auc))
+#print('random f1 score is: ' + str(random_f1_score))
+
+###### LEAP extension##########################################
+leap_gasch_path = 'logs/leap/MAC_symmetric_gasch_example.csv'
+leap_gasch = pd.read_csv(leap_gasch_path, sep=',', header=0, index_col=False)
+leap_gasch = leap_gasch.fillna(1)
+leap_gasch_adj = leap_gasch.values
+
+leap_roc_score, leap_ap_score, leap_rp_auc, leap_f1_score = pearson_get_scores(leap_gasch_adj, adj_orig, pearson_val_edges, pearson_val_edges_false)
+print('leap roc score is: ' + str(leap_roc_score))
+print('leap ap score is: ' + str(leap_ap_score))
+print('leap rp score is: ' + str(leap_rp_auc))
+#################################################
 
 if FLAGS.features == 0:
     features = sp.identity(features.shape[0])  # featureless

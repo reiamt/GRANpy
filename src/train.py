@@ -151,7 +151,7 @@ def get_scores(adj_rec, adj_orig, edges_pos, edges_neg, model_timestamp, viz_roc
     for e in edges_pos:
         preds.append(sigmoid(adj_rec[e[0], e[1]]))
         pos.append(adj_orig[e[0], e[1]])
-
+    
     preds_neg = []
     neg = []
     for e in edges_neg:

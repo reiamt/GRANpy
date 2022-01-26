@@ -34,7 +34,7 @@ def load_data(norm_expression_path, gold_standard_path, model_timestamp, random_
     adj, features, gene_names = crop_isolated_nodes(adj, features, gene_names)
     adj, features, gene_names = shuffle_nodes(adj, features, gene_names)
     features = preprocessing.StandardScaler().fit_transform(features)
-    #features= preprocessing.MinMaxScaler().fit_transform(features)
+    #features = preprocessing.MinMaxScaler().fit_transform(features)
    
     adj = sp.csr_matrix(adj)
     features = sp.csr_matrix(features)
@@ -43,7 +43,7 @@ def load_data(norm_expression_path, gold_standard_path, model_timestamp, random_
 
     #save preprocessed adjacency matrix
     np.savetxt('logs/outputs/' + model_timestamp + '_preprocessed_adj.csv', adj.toarray(), delimiter=";")
-    
+
     return adj, features, gene_names
 
 def crop_isolated_nodes(adj_orig, feat_orig, genes_orig):

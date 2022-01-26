@@ -6,6 +6,10 @@ import time
 import pandas as pd
 from sklearn.metrics import roc_auc_score, average_precision_score, roc_curve, precision_recall_curve, auc
 
+#from rpy2.robjects.packages import importr
+#from rpy2.robjects import pandas2ri 
+#pythonpandas2ri.activate()
+
 def pearsonMatrix_thres(data, threshold=0.8):
     row=[]
     col=[]
@@ -46,13 +50,13 @@ def pearson_get_scores(adj_rec, adj_orig, edges_pos, edges_neg):
     preds = []
     pos = []
     for e in edges_pos:
-        preds.append(adj_rec[e[0], e[1]])
+        preds.append(abs(adj_rec[e[0], e[1]]))
         pos.append(adj_orig[e[0], e[1]])
 
     preds_neg = []
     neg = []
     for e in edges_neg:
-        preds_neg.append(adj_rec[e[0], e[1]])
+        preds_neg.append(abs(adj_rec[e[0], e[1]]))
         neg.append(adj_orig[e[0], e[1]])
 
     preds_all = np.hstack([preds, preds_neg])
@@ -62,8 +66,30 @@ def pearson_get_scores(adj_rec, adj_orig, edges_pos, edges_neg):
     ap_score = average_precision_score(labels_all, preds_all)
     precision, recall, _ = precision_recall_curve(labels_all, preds_all)
     rp_auc = auc(recall, precision)
+    f1_score = 2 * (precision * recall) / (precision + recall)
 
-    return roc_score, ap_score, rp_auc
+    return roc_score, ap_score, rp_auc, f1_score
+
+
+def randomMatrix(cols, rows):
+    return np.random.rand(cols,rows)
+
+# Leap test
+leap_gasch_path = 'logs/leap/MAC_symmetric_gasch_example.csv'
+leap_gasch = pd.read_csv(leap_gasch_path, sep=',', header=0, index_col=False)
+leap_gasch = leap_gasch.fillna(1)
+leap_gasch_adj = leap_gasch.values
+print(leap_gasch_adj.shape)
+
+"""
+LEAP = importr("LEAP")
+leap_test = LEAP.MAC_counter(data=example_data)
+print(leap_test)
+"""
+
+
+
+
 
 """
 #copied from main.py
