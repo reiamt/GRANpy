@@ -1,14 +1,13 @@
 ## taken from GRGNN paper, code in GitHub: preprocessing/preprocessing_DREAM5.py
 import numpy as np
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 import scipy.sparse
 import time
 import pandas as pd
-from sklearn.metrics import roc_auc_score, average_precision_score, roc_curve, precision_recall_curve, auc
+from sklearn.metrics import roc_auc_score, average_precision_score, roc_curve, precision_recall_curve, auc, precision_score
+from sklearn.metrics import recall_score
+from preprocessing import mask_test_edges, construct_adj
 
-#from rpy2.robjects.packages import importr
-#from rpy2.robjects import pandas2ri 
-#pythonpandas2ri.activate()
 
 def pearsonMatrix_thres(data, threshold=0.8):
     row=[]
@@ -31,19 +30,20 @@ def pearsonMatrix_thres(data, threshold=0.8):
 
 def pearsonMatrix(data):
     row, col, edata = ([] for i in range(3))
-    for i in np.arange(data.shape[1]):
-        for j in np.arange(data.shape[1]):
-            corr, _ = pearsonr(data[:,i],data[:,j])
-            row.append(i)
-            col.append(j)
+    for i in np.arange(data.shape[0]):
+        for j in np.arange(data.shape[0]):
+            corr, _ = pearsonr(data[i,:],data[j,:])
+            row.append(j)
+            col.append(i)
             edata.append(corr)
 
     row = np.asarray(row)
     col = np.asarray(col)
     edata = np.asarray(edata)
     edata = edata.ravel()
-    mtx = scipy.sparse.csc_matrix((edata, (row,col)), shape=(data.shape[1], data.shape[1]))
+    mtx = scipy.sparse.csc_matrix((edata, (row,col)), shape=(data.shape[0], data.shape[0]))
     mtx = mtx.toarray()
+    mtx = mtx - scipy.sparse.identity(data.shape[0]) #delete diagonal since we allow no self-connected nodes
     return mtx
 
 def pearson_get_scores(adj_rec, adj_orig, edges_pos, edges_neg):
@@ -66,93 +66,13 @@ def pearson_get_scores(adj_rec, adj_orig, edges_pos, edges_neg):
     ap_score = average_precision_score(labels_all, preds_all)
     precision, recall, _ = precision_recall_curve(labels_all, preds_all)
     rp_auc = auc(recall, precision)
-    f1_score = 2 * (precision * recall) / (precision + recall)
+    f_score = 2 * (np.mean(precision) * np.mean(recall)) / (np.mean(precision) + np.mean(recall))
 
-    return roc_score, ap_score, rp_auc, f1_score
+    return roc_score, ap_score, rp_auc, f_score
 
 
 def randomMatrix(cols, rows):
     return np.random.rand(cols,rows)
 
-# Leap test
-leap_gasch_path = 'logs/leap/MAC_symmetric_gasch_example.csv'
-leap_gasch = pd.read_csv(leap_gasch_path, sep=',', header=0, index_col=False)
-leap_gasch = leap_gasch.fillna(1)
-leap_gasch_adj = leap_gasch.values
-print(leap_gasch_adj.shape)
 
-"""
-LEAP = importr("LEAP")
-leap_test = LEAP.MAC_counter(data=example_data)
-print(leap_test)
-"""
-
-
-
-
-
-"""
-#copied from main.py
-model_timestamp = time.strftime("%Y%m%d_%H%M%S") + '_' + 'gasch_GSE102475' + '_' + 'yeast_chipunion_KDUnion_intersect'
-norm_expression_path = 'data/normalized_expression/gasch_GSE102475.csv'
-gold_standard_path = 'data/gold_standards/' + 'yeast_chipunion_KDUnion_intersect' + '.txt'
-adj, features, gene_names = load_data(norm_expression_path, gold_standard_path, model_timestamp, 0)
-
-#from scipy sparse matrix
-features = features.todense()
-pearson_test = pearsonMatrix(np.transpose(features))
-pearson_test = pearson_test.todense()
-pearson_tmp = pearson_test.flatten()
-pearson_test_array = np.squeeze(np.asarray(pearson_tmp))
-
-
-#path spaeter noch anpassen, dass immer das neueste genommen wird
-ground_truth_path = 'logs/outputs/20220115_193357_gasch_GSE102475_yeast_chipunion_KDUnion_intersect_preprocessed_adj.csv'
-my_data = np.genfromtxt(ground_truth_path, delimiter=';', dtype=None)
-my_data = my_data.flatten()
-my_data = np.transpose(my_data)
-
-print('ROC AUC score: ' + str(roc_auc_score(my_data, pearson_test_array)))
-
-"""
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-"""
-############################### NOT USED CODE
-edge_filename = 'data/gold_standards/yeast_chipunion_KDUnion_intersect.txt'
-
-norm_expression = pd.read_csv(norm_expression_path, sep=',', header=0, index_col=0)
-
-rownum = 3847
-colnum = 163
-data = np.zeros((rownum,colnum))
-
-count = -1
-with open(norm_expression_path) as f:
-    lines = f.readlines()
-    for line in lines:
-        if count >= 0:
-            line = line.strip()
-            words = line.split(',')
-            ncount = -1
-            for word in words:
-                if ncount >= 0:
-                    word = float(word)
-                    data[count, ncount] = word
-                ncount = ncount +1
-        count = count + 1
-    f.close()
-############################################
-"""
+    

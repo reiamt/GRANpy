@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 def viz_train_val_data(hist_scores, model_str, model_timestamp):
     
     # Plot training & validation metrics
-    loss_train, kl_train, acc_train, ap_train, roc_train, loss_val, acc_val, ap_val, roc_val = hist_scores
+    loss_train, kl_train, acc_train, ap_train, roc_train, f_train, loss_val, acc_val, ap_val, roc_val, f_val = hist_scores
     figure, axis = plt.subplots(2,2)
 
     axis[0, 0].plot(loss_train)
